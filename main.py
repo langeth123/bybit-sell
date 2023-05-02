@@ -1,17 +1,4 @@
-from loguru import logger
-from ccxt import bybit as Bybit
-from threading import Thread
-import traceback
-import ccxt
-from time import sleep, time
-
-ACCOUNTS = [i.replace("\n", "") for i in open("accs.txt").readlines()]
-PRICES = [2, 2.5] # MIN, MAX prices
-PAIR = 'ARB/USDT'
-SLEEP_FAILED_DELAY = 3
-SLEEP_CHECKING_DELAY = 0.05
-TIMESTAMP = 1683059400
-AMOUNT_TO_SELL = 2
+from settings import *
 
 def account_session_handler(account_data: str) -> Bybit:
     api_key, secret_key, proxy = account_data.split(":", maxsplit=2)
@@ -74,27 +61,29 @@ def process_sell(account_data: dict) -> None:
         pass
 
     logger.info(f'Account: #{number}, setting sell order for pair: {PAIR}, with price: {price}')
-    try:
-        response = bybit.create_limit_sell_order(PAIR, AMOUNT_TO_SELL, price)
-        if response.get("status") == 'open':
-            logger.success(f'Account: #{number} | placed the order. Order id: {response.get("id")}')
-        else:
-            logger.error(f'Account: #{number} | Failed order! Response: {response}')
-        #print(bybit.fetch_balance())
-    except Exception as error:
-        if "Insufficient balance" in str(error):
-            logger.error(f'Account: #{number} | Have insufficient balance for order')
-        elif "bybit does not have market symbol" in str(error):
-            sleep(SLEEP_FAILED_DELAY)
-            return process_sell(account_data)
-        else:
-            logger.error(f'Account: #{number} | Failed with error: {error}')
-            sleep(SLEEP_FAILED_DELAY)
-            return process_sell(account_data)
+    while True:
+        try:
+            response = bybit.create_limit_sell_order(PAIR, AMOUNT_TO_SELL, price)
+            if response.get("status") == 'open':
+                logger.success(f'Account: #{number} | placed the order. Order id: {response.get("id")}')
+                return
+            else:
+                logger.error(f'Account: #{number} | Failed order! Response: {response}')
+
+        except Exception as error:
+            if "Proxy" in str(traceback.format_exc()):
+                logger.error(f'Account: #{number} | Failed because Proxy dead! | {error}')
+            elif "Insufficient balance" in str(error):
+                logger.error(f'Account: #{number} | Have insufficient balance for order')
+            elif "bybit does not have market symbol" in str(error):
+                pass
+            else:
+                logger.error(f'Account: #{number} | Failed with error: {error}')
+        sleep(SLEEP_FAILED_DELAY)
 
 
 def remove_all_orders(account_data: dict) -> None:
-    number, price, bybit = account_data.values()
+    number, _, bybit = account_data.values()
     try:
         response = bybit.cancel_all_spot_orders(PAIR)
         if response.get("ret_msg") == 'OK':
@@ -102,7 +91,10 @@ def remove_all_orders(account_data: dict) -> None:
         else:
             logger.error(f'Account: #{number} | Cant cancel all orders! Response: {response}')
     except Exception as error:
-        logger.error(f'Account: #{number} | Failed with error: {error}')
+        if "Proxy" in str(traceback.format_exc()):
+            logger.error(f'Account: #{number} | Failed because Proxy dead! | {error}')
+        else:
+            logger.error(f'Account: #{number} | Failed with error: {error}')
 
 def main() -> None:
     accounts_data = prepare_accounts()
