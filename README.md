@@ -21,3 +21,18 @@ SLEEP_FAILED_DELAY = 3 # sleep time in seconds after failed action
 SLEEP_CHECKING_DELAY = 0.05 # sleep time in seconds for waiting timestamp
 TIMESTAMP = 1683059400 # timestamp for placing orders. Check https://www.epochconverter.com/
 AMOUNT_TO_SELL = 2 # amount in tokens to sell
+
+~~~
+
+To change work status, check main.py file
+~~~python
+"""
+Task numbers
+1 - Place order
+2 - Cancel all orders
+
+"""
+
+if __name__ == "__main__":
+    task_number = 1
+    main()
