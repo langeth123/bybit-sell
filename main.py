@@ -10,8 +10,8 @@ def account_session_handler(account_data: str) -> Bybit:
     )
     bybit.session.proxies.update(
         {
-            "http": proxy,
-            "https": proxy
+            "http": f'http://{proxy}',
+            "https": f'http://{proxy}'
         }
     )
     return bybit
