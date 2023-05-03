@@ -1,6 +1,7 @@
 # Bybit seller
 
 It is a little script for selling tokens on the first seconds when token launched
+DEV: https://t.me/lang_crypto
 
 # Features
 
